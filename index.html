@@ -29,7 +29,6 @@
             0% { transform: translateY(0) rotate(0deg); opacity: 1; }
             100% { transform: translateY(-100vh) rotate(360deg); opacity: 0; }
         }
-        /* ဓာတ်ပုံဘောင် ဒီဇိုင်း */
         .photo-frame {
             border: 10px solid white;
             box-shadow: 0 15px 35px rgba(0,0,0,0.15);
@@ -41,40 +40,45 @@
             position: relative;
             background-color: #ffe4e6;
             transform: rotate(-2deg);
-            transition: all 0.5s ease;
-        }
-        .photo-frame:hover {
-            transform: rotate(0deg) scale(1.05);
         }
         .timer-box {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(5px);
         }
+        /* Music pulse animation */
+        .music-playing {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.7); }
+            70% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(236, 72, 153, 0); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <!-- သီချင်းဖွင့်ရန်/ပိတ်ရန် ခလုတ် -->
-    <div id="audio-control" class="fixed top-4 right-4 bg-white p-3 rounded-full shadow-lg cursor-pointer z-50">
-        🎵
+    <!-- သီချင်း Control -->
+    <div id="audio-control" class="fixed top-4 right-4 bg-white p-3 rounded-full shadow-lg cursor-pointer z-50 flex items-center justify-center border-2 border-pink-500">
+        <span id="music-icon">🎵</span>
     </div>
+    
+    <!-- Audio Element - GitHub ထဲက သီချင်းဖိုင်အမည်နဲ့ တူရပါမယ် -->
+    <audio id="bg-music" loop>
+        <source src="birthday-song.mp3" type="audio/mpeg">
+        သင့် Browser က သီချင်းဖွင့်လို့မရပါ
+    </audio>
 
     <div id="main-content" class="text-center w-full max-w-md">
-        
         <div class="animate__animated animate__fadeInDown">
             <h1 class="text-4xl font-bold text-pink-600 mb-2 romantic-font">Happy Birthday</h1>
             <p class="text-gray-600 italic">"ကမ္ဘာပေါ်မှာ လင်း အတွက် အချစ်ရဆုံး မြင့် အတွက်"</p>
         </div>
 
-        <!-- မြင့်လေးရဲ့ ဓာတ်ပုံ - GitHub ထဲက my-photo.jpg နဲ့ ချိတ်ထားပါတယ် -->
         <div class="photo-frame my-8 animate__animated animate__zoomIn">
-            <img id="profile-pic" 
-                 src="my-photo.jpg" 
-                 alt="မြင့်လေးရဲ့ပုံ" 
-                 class="w-full h-full object-cover">
+            <img id="profile-pic" src="my-photo.jpg" alt="မြင့်လေးရဲ့ပုံ" class="w-full h-full object-cover">
         </div>
 
-        <!-- မွေးနေ့ Countdown -->
         <div id="countdown-container" class="timer-box p-6 rounded-3xl shadow-xl mb-8 border-2 border-pink-100">
             <h2 class="text-lg font-semibold text-gray-700 mb-4">မွေးနေ့ရောက်ဖို့ လိုအပ်သောအချိန်</h2>
             <div class="grid grid-cols-4 gap-2">
@@ -116,19 +120,47 @@
     </div>
 
     <script>
-        // မွေးနေ့ရက်စွဲ (ဖေဖော်ဝါရီ ၂၃)
+        const audio = document.getElementById("bg-music");
+        const audioControl = document.getElementById("audio-control");
+        const musicIcon = document.getElementById("music-icon");
+        let isPlaying = false;
+
+        // သီချင်းဖွင့်/ပိတ် လုပ်ဆောင်ချက်
+        audioControl.addEventListener("click", () => {
+            if (isPlaying) {
+                audio.pause();
+                musicIcon.innerText = "🎵";
+                audioControl.classList.remove("music-playing");
+            } else {
+                audio.play().catch(e => console.log("Auto-play blocked"));
+                musicIcon.innerText = "⏸️";
+                audioControl.classList.add("music-playing");
+            }
+            isPlaying = !isPlaying;
+        });
+
+        // Surprise နှိပ်ရင် သီချင်းပါ တန်းပွင့်စေချင်ရင်
+        document.getElementById("surprise-btn").addEventListener("click", () => {
+            document.getElementById("surprise-overlay").classList.remove("hidden");
+            if (!isPlaying) {
+                audio.play().catch(e => console.log("Play failed"));
+                musicIcon.innerText = "⏸️";
+                audioControl.classList.add("music-playing");
+                isPlaying = true;
+            }
+            startHearts();
+        });
+
+        // Countdown Logic (ဖေဖော်ဝါရီ ၂၃)
         const currentYear = new Date().getFullYear();
         let targetDate = new Date(`${currentYear}-02-23T00:00:00`).getTime();
-        
-        // ရက်ကျော်နေရင် နောက်နှစ်အတွက်တွက်မယ်
         if (targetDate < new Date().getTime()) {
             targetDate = new Date(`${currentYear + 1}-02-23T00:00:00`).getTime();
         }
 
-        const timer = setInterval(function() {
+        setInterval(function() {
             const now = new Date().getTime();
             const distance = targetDate - now;
-
             const d = Math.floor(distance / (1000 * 60 * 60 * 24));
             const h = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const m = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
@@ -138,24 +170,12 @@
             document.getElementById("hours").innerText = h < 0 ? "00" : (h < 10 ? "0"+h : h);
             document.getElementById("minutes").innerText = m < 0 ? "00" : (m < 10 ? "0"+m : m);
             document.getElementById("seconds").innerText = s < 0 ? "00" : (s < 10 ? "0"+s : s);
-
-            if (distance < 0) {
-                clearInterval(timer);
-                document.getElementById("countdown-container").innerHTML = "<h2 class='text-2xl font-bold text-white animate__animated animate__heartBeat'>ပျော်ရွှင်စရာ မွေးနေ့လေး ဖြစ်ပါစေ မြင့်လေး! 🎂</h2>";
-            }
         }, 1000);
-
-        // Surprise Button Event
-        document.getElementById("surprise-btn").addEventListener("click", () => {
-            document.getElementById("surprise-overlay").classList.remove("hidden");
-            startHearts();
-        });
 
         function closeSurprise() {
             document.getElementById("surprise-overlay").classList.add("hidden");
         }
 
-        // နှလုံးသားလေးများ ကြွေဆင်းစေခြင်း
         function startHearts() {
             const heartInterval = setInterval(() => {
                 if (document.getElementById("surprise-overlay").classList.contains("hidden")) {
@@ -171,12 +191,6 @@
                 setTimeout(() => { heart.remove(); }, 4000);
             }, 300);
         }
-
-        let musicPlaying = false;
-        document.getElementById("audio-control").addEventListener("click", function() {
-            musicPlaying = !musicPlaying;
-            this.innerHTML = musicPlaying ? "⏸️" : "🎵";
-        });
     </script>
 </body>
 </html>
